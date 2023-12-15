@@ -15,7 +15,7 @@ app.use(cors());
 
 // Set up Multer for file uploads
 const storage = multer.diskStorage({
-  destination: './uploads',
+  destination: './src/uploads',
   filename: function (req, file, cb) {
     cb(null, file.originalname);
   }
@@ -50,6 +50,7 @@ app.post('/upload', upload.array('files', 5), (req, res) => {
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
+
 
 // Start the server
 app.listen(port, () => {
