@@ -11,7 +11,10 @@ const app = express();
 const port = 3000;
 
 // Set up CORS middleware
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+}));
 
 // Set up Multer for file uploads
 const storage = multer.diskStorage({
@@ -37,15 +40,28 @@ const upload = multer({
 });
 
 // File upload endpoint
-app.post('/upload', upload.array('files', 5), (req, res) => {
-  const fileUrls = req.files.map(file => {
-    return {
-      originalname: file.originalname,
-      url: `http://localhost:${port}/uploads/${file.originalname}`
-    };
-  });
+app.post('/upload', upload.single('file'), async (req, res) => {
+  try {
+    console.log('server receive:', req.file);
+    if (!req.file) {
+      // Handle the case where no file was uploaded
+      return res.status(400).json({ error: 'No file provided' });
+    }
 
-  res.json({ files: fileUrls });
+    // Access properties of the uploaded file
+    const { originalname } = req.file;
+    const fileUrl = `http://localhost:${port}/uploads/${originalname}`;
+
+    // Respond with the file information
+    res.json({
+      originalname,
+      url: fileUrl
+    });
+  } catch (error) {
+    // Handle other errors
+    console.error('Error:', error.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 // Serve uploaded files statically
