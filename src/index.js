@@ -3,6 +3,7 @@ import cors from 'cors';
 import multer from 'multer';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import fs from 'fs/promises';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -59,6 +60,29 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     });
   } catch (error) {
     // Handle other errors
+    console.error('Error:', error.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Delete file endpoint
+app.delete('/uploads/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = join(__dirname, 'uploads', filename);
+
+    // Check if the file exists
+    const fileExists = await fs.access(filePath).then(() => true).catch(() => false);
+
+    if (!fileExists) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Delete the file
+    await fs.unlink(filePath);
+
+    res.json({ message: 'File deleted successfully' });
+  } catch (error) {
     console.error('Error:', error.message);
     res.status(500).json({ error: 'Internal Server Error' });
   }
