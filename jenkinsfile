@@ -1,0 +1,45 @@
+pipeline {
+        agent { label 'jenkins-agent-local' }
+        // agent any
+        stages {
+            stage('Build and Test') {
+                steps {
+                    echo 'building and testing...'
+                    nodejs(nodeJSInstallationName: 'NodeJS') {
+                        // Install pnpm globally, clean cache, and install dependencies
+                        sh 'npm install -g pnpm'
+                        sh 'npm cache clean --force'
+                        sh 'pnpm install --store=node_modules/.pnpm-store'
+                        sh 'pnpm run test'
+                    }
+                }
+            }   
+
+            stage('Push to DockerHub') {
+                tools { dockerTool 'DockerInstall'}
+                steps {
+                    echo 'Deploying...'
+                    withCredentials([usernamePassword(credentialsId: 'myDockerID', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                    sh 'docker login -u "${USERNAME}" -p "${PASSWORD}" https://index.docker.io/v1/'
+                    sh 'docker build -t ${USERNAME}/${GITHUB_REPO_NAME}:v${BUILD_NUMBER} -f dockerfile .'
+                    sh 'docker push ${USERNAME}/${GITHUB_REPO_NAME}:v${BUILD_NUMBER}'
+                    echo 'Deployed! Proceeding to delete the built container...'
+                    sh 'docker rmi ${USERNAME}/${GITHUB_REPO_NAME}:v${BUILD_NUMBER}'
+
+                }
+                }
+            }
+
+            stage('Trigger Deployment') {
+                steps {
+                    echo 'triggering Argo-CD deployment...'
+                    build job: 'Argo-CD-Deployment', parameters: [string(name: 'VERSION', value: "${BUILD_NUMBER}")]
+                }
+            }
+            stage('Done') {
+                steps {
+                    echo 'Done!!!!'
+                }
+            }
+        }
+    }
