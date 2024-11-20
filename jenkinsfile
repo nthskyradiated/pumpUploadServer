@@ -10,6 +10,8 @@ pipeline {
                         sh 'npm install -g pnpm'
                         sh 'npm cache clean --force'
                         sh 'pnpm install --store=node_modules/.pnpm-store'
+                        sh 'curl https://jsoncompare.org/LearningContainer/SampleFiles/PDF/sample-pdf-download-10-mb.pdf --output large-file.pdf'
+                        sh 'mv large-file.pdf ./tests/large-file.pdf'
                         sh 'pnpm run test'
                     }
                 }
