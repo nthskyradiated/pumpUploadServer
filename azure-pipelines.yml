@@ -1,0 +1,50 @@
+# Docker
+# Build a Docker image
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger:
+  - master
+  
+resources:
+  - repo: self
+  
+pool:
+    vmImage: ubuntu-latest
+  
+parameters:
+    - name: DockerID
+      type: string
+      default: $(DOCKER_USERNAME)
+    - name: DockerPassword
+      type: string
+      default: $(DOCKER_PASSWORD) 
+  
+steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '23.1'
+      checkLatest: true
+  
+  - script: |
+      curl https://jsoncompare.org/LearningContainer/SampleFiles/PDF/sample-pdf-download-10-mb.pdf --output large-file.pdf
+      mv large-file.pdf ./tests/large-file.pdf
+      npm install -g pnpm
+      pnpm install
+      pnpm run test
+    displayName: 'Set up npm and pnpm environment'
+  
+  # Docker build and push steps
+  - task: Docker@2
+    inputs:
+      containerRegistry: 'pump-factory-docker-registry' # Use a service connection for Docker Hub
+      repository: '$(DOCKER_USERNAME)/pump-upload-svr-azure'
+      command: 'buildAndPush'
+      Dockerfile: '**/dockerfile'  # Path to Dockerfile
+      tags: |
+        $(Build.BuildId)
+        latest
+  
+  # Logout
+  - script: |
+      docker logout
+    displayName: 'Log out of Docker Hub'
