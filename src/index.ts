@@ -4,7 +4,6 @@ import multer from "multer";
 import { join } from "path";
 import fs from "fs/promises";
 
-
 export const app = express();
 const port = 3000;
 
@@ -16,7 +15,7 @@ app.use(
   cors({
     origin: "*",
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  })
+  }),
 );
 
 // Set up Multer for file uploads
@@ -31,7 +30,7 @@ const storage = multer.diskStorage({
 const fileFilter = (
   _req: Request,
   file: Express.Multer.File,
-  cb: multer.FileFilterCallback
+  cb: multer.FileFilterCallback,
 ) => {
   const allowedFileTypes = [
     "application/pdf",
@@ -47,7 +46,7 @@ const fileFilter = (
   } else {
     const error = new multer.MulterError(
       "LIMIT_UNEXPECTED_FILE",
-      file.fieldname
+      file.fieldname,
     ); // Pass a Multer-specific error
     error.message =
       "Invalid file type. Only PDF, Word documents, and image files are allowed.";
@@ -82,7 +81,7 @@ app.post(
     } catch (error) {
       next(error); // Forward the error to the global error handler
     }
-  }
+  },
 );
 
 // Global error handler
@@ -96,12 +95,10 @@ app.use((err: any, req: Request, res: Response, next: NextFunction): void => {
       return;
     }
     if (err.code === "LIMIT_UNEXPECTED_FILE") {
-      res
-        .status(400)
-        .json({
-          error:
-            "Invalid file type. Only PDF, Word documents, and image files are allowed.",
-        });
+      res.status(400).json({
+        error:
+          "Invalid file type. Only PDF, Word documents, and image files are allowed.",
+      });
       return;
     }
     // Handle other multer errors
@@ -113,11 +110,9 @@ app.use((err: any, req: Request, res: Response, next: NextFunction): void => {
   if (err.status === 400) {
     res.status(400).json({ error: err.message }); // Invalid file type or other custom 400 errors
   } else {
-    res
-      .status(500)
-      .json({
-        error: `Internal Server Error: ${err.message || "Unknown error"}`,
-      });
+    res.status(500).json({
+      error: `Internal Server Error: ${err.message || "Unknown error"}`,
+    });
   }
 });
 
@@ -126,9 +121,8 @@ app.delete(
   "/uploads/:filename",
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const filename = req.params.filename;
+      const filename = req.params.filename.toString();
       const filePath = join(baseDir, "src/uploads", filename);
-
       const fileExists = await fs
         .access(filePath)
         .then(() => true)
@@ -146,13 +140,13 @@ app.delete(
       console.error("Error:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 // Serve uploaded files statically
 app.use(
   "/uploads",
-  express.static(join(baseDir, "src/uploads"), { redirect: false })
+  express.static(join(baseDir, "src/uploads"), { redirect: false }),
 );
 
 export const server = app.listen(port, () => {
