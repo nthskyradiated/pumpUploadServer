@@ -3,6 +3,7 @@ import cors from "cors";
 import multer from "multer";
 import { join } from "path";
 import fs from "fs/promises";
+import { type } from "os";
 
 export const app = express();
 const port = 3000;
@@ -25,6 +26,7 @@ const storage = multer.diskStorage({
     cb(null, file.originalname);
   },
 });
+type FileExists = boolean;
 
 // File filter to check for allowed file types
 const fileFilter = (
@@ -123,7 +125,7 @@ app.delete(
     try {
       const filename = req.params.filename.toString();
       const filePath = join(baseDir, "src/uploads", filename);
-      const fileExists = await fs
+      const fileExists: FileExists = await fs
         .access(filePath)
         .then(() => true)
         .catch(() => false);
